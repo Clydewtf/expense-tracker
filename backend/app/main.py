@@ -1,7 +1,8 @@
 from fastapi import FastAPI
+from app.core.config import settings
 
-app = FastAPI(title="Expense Tracker Backend")
+app = FastAPI(title=settings.PROJECT_NAME)
 
-@app.get("/")
-async def root():
-    return {"message": "Backend is running"}
+@app.get("/ping")
+def health_check():
+    return {"status": "ok"}
