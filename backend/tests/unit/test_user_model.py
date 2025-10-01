@@ -1,7 +1,7 @@
 # backend/tests/unit/test_user_model.py
 import pytest
 from datetime import datetime
-from backend.app.models.user import User
+from app.models.user import User
 
 
 def test_user_model_creation():
