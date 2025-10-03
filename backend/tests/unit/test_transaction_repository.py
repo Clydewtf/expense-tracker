@@ -11,18 +11,20 @@ from app.repositories.user_repository import UserRepository
 
 # setup test db
 engine = create_engine(settings.DATABASE_URL)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False)
 
 # Fixture for db
 @pytest.fixture(scope="function")
 def db_session():
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
+    connection = engine.connect()
+    transaction = connection.begin()
+    db = TestingSessionLocal(bind=connection)
     try:
         yield db
     finally:
-        db.rollback()
         db.close()
+        transaction.rollback()
+        connection.close()
 
 # Fixture for transaction repository
 @pytest.fixture
