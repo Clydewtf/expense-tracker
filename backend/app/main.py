@@ -6,6 +6,6 @@ from app.models import user, transaction
 app = FastAPI(title=settings.PROJECT_NAME)
 #Base.metadata.create_all(bind=engine)
 
-@app.get("/ping")d
+@app.get("/ping")
 def health_check():
     return {"status": "ok"}
