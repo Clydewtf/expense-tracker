@@ -38,13 +38,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r backend/requirements.txt
 
+    - name: Set PYTHONPATH
+      run: echo "PYTHONPATH=$PWD/backend" >> $GITHUB_ENV
+
     - name: Run DB migrations
       run: |
         cd backend
         alembic upgrade head
-
-    - name: Set PYTHONPATH
-      run: echo "PYTHONPATH=$PWD/backend" >> $GITHUB_ENV
 
     - name: Run tests
       run: |
