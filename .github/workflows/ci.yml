@@ -41,6 +41,11 @@ jobs:
     - name: Set PYTHONPATH
       run: echo "PYTHONPATH=$PWD/backend" >> $GITHUB_ENV
 
+    - name: Run DB migrations
+      run: |
+        cd backend
+        alembic upgrade head
+
     - name: Run tests
       run: |
         pytest backend/tests --maxfail=1 --disable-warnings -q
