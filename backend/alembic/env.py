@@ -8,6 +8,9 @@ from app.core.db import Base
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from app import models
+from app.models import user, transaction
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
