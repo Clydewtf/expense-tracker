@@ -15,3 +15,4 @@ def test_user_model_creation():
     assert user.email == "test@example.com"
     assert user.password_hash == "hashed_password"
     assert isinstance(user.created_at, datetime) or user.created_at is None
+    

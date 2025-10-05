@@ -1,12 +1,14 @@
 from pydantic import BaseModel
 from datetime import datetime
 
+
 class TransactionCreate(BaseModel):
     amount: float
     currency: str
     category: str
     description: str | None = None
     date: datetime | None = None
+
 
 class TransactionRead(BaseModel):
     id: int
@@ -17,5 +19,5 @@ class TransactionRead(BaseModel):
     description: str | None
     date: datetime
 
-    class Config:
+    class ConfigDict:
         from_attributes = True

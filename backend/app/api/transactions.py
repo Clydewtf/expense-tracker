@@ -4,14 +4,20 @@ from app.core.db import get_db
 from app.models.transaction import Transaction
 from app.repositories.transaction_repository import TransactionRepository
 from app.schemas.transaction_schema import TransactionCreate, TransactionRead
+from app.core.security import get_current_user
+from app.models.user import User
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
 
 @router.post("/", response_model=TransactionRead, status_code=status.HTTP_201_CREATED)
-def create_transaction(transaction_in: TransactionCreate, db: Session = Depends(get_db)):
+def create_transaction(
+        transaction_in: TransactionCreate,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
     repo = TransactionRepository(db)
-    transaction = Transaction(**transaction_in.dict(), user_id=1)  # TODO: временно user_id=1, позже заменить на JWT
+    transaction = Transaction(**transaction_in.model_dump(), user_id=current_user.id)
     created = repo.create(transaction)
     return created
 
