@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.db import Base, get_db
 from app.main import app
 from app.models.user import User
-from app.core.security import hash_password
+from app.core.security import hash_password, get_current_user
 from app.repositories.transaction_repository import TransactionRepository
 from app.repositories.user_repository import UserRepository
 
@@ -61,12 +61,24 @@ def client(db_session):
 # fixture for fake user
 @pytest.fixture
 def fake_user(db_session):
-    email = f"test_{uuid.uuid4().hex}@example.com"
+    #email = f"test_{uuid.uuid4().hex}@example.com"
     user = User(
-        email=email,
+        email="test@example.com",
         password_hash=hash_password("12345")
     )
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
     return user
+
+
+@pytest.fixture(autouse=True)
+def override_get_current_user(db_session, fake_user):
+    def _get_current_user():
+        # return object linked to current session
+        return db_session.get(User, fake_user.id)
+
+    app.dependency_overrides[get_current_user] = _get_current_user
+    yield
+    app.dependency_overrides.clear()
+
