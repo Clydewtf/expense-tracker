@@ -4,6 +4,7 @@ from datetime import datetime
 from app.models.transaction import Transaction
 from app.models.user import User
 
+
 def test_transaction_creation():
     """
     Check that an object Transaction is created correctly
