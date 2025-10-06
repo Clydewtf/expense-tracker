@@ -41,6 +41,18 @@ jobs:
     - name: Set PYTHONPATH
       run: echo "PYTHONPATH=$PWD/backend" >> $GITHUB_ENV
 
+    - name: Set environment variables
+      run: |
+        export POSTGRES_USER=postgres
+        export POSTGRES_PASSWORD=postgres
+        export POSTGRES_DB=expense_db
+        export POSTGRES_HOST=localhost
+        export POSTGRES_PORT=5432
+        export JWT_SECRET=supersecret
+        export JWT_ALGORITHM=HS256
+        export REDIS_HOST=localhost
+        export REDIS_PORT=6379
+
     - name: Run DB migrations
       run: |
         cd backend

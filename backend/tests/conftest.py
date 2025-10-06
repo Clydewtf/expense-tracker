@@ -1,11 +1,12 @@
 # backend/tests/conftest.py
+import os
 import pytest
 import uuid
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
+from dotenv import load_dotenv
 
-from app.core.config import settings
 from app.core.db import Base, get_db
 from app.main import app
 from app.models.user import User
@@ -13,8 +14,13 @@ from app.core.security import hash_password, get_current_user
 from app.repositories.transaction_repository import TransactionRepository
 from app.repositories.user_repository import UserRepository
 
+load_dotenv(os.path.join(os.path.dirname(__file__), "../.env"))
+
+from app.core.config import settings
+
+
 # setup test db
-engine = create_engine(settings.DATABASE_URL)
+engine = create_engine(settings.database_url)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False)
 
 
