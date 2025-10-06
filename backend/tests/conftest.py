@@ -14,7 +14,7 @@ from app.repositories.transaction_repository import TransactionRepository
 from app.repositories.user_repository import UserRepository
 
 # setup test db
-engine = create_engine(settings.DATABASE_URL)
+engine = create_engine(settings.database_url)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False)
 
 
