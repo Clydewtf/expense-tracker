@@ -24,7 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is AuthRegistered || state is AuthAuthenticated) {
-              Navigator.pushReplacementNamed(context, '/home');
+              Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
             }
             if (state is AuthError) {
               ScaffoldMessenger.of(context).showSnackBar(
