@@ -8,14 +8,22 @@ from app.services.cache_service import RedisCache
 class ExchangeService:
     BASE_URL = "https://open.er-api.com/v6/latest"
 
-    def __init__(self):
-        self.cache = RedisCache()
+    def __init__(self, cache: RedisCache | None = None):
+        self.cache = cache or RedisCache()
+
+    async def fetch_rate(self, base: str, target: str) -> float:
+        """Fetch rate from external API."""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{self.BASE_URL}?base={base}&symbols={target}") as resp:
+                data = await resp.json()
+
+        rates = data.get("rates")
+        if not rates or target not in rates:
+            raise ValueError(f"API response invalid: {data}")
+        return rates[target]
 
     async def get_rate(self, base: str, target: str) -> float:
-        """
-        Get exchange rate base -> target.
-        First try Redis, then API.
-        """
+        """Get exchange rate from cache or API."""
         key = f"exchange:{base}:{target}"
 
         # Check Redis
@@ -24,17 +32,7 @@ class ExchangeService:
             print(f"[CACHE HIT] {base}->{target}: {cached['rate']}")
             return cached["rate"]
 
-        # Check API
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{self.BASE_URL}?base={base}&symbols={target}") as resp:
-                data = await resp.json()
-
-        # Check that the keys exist
-        rates = data.get("rates")
-        if not rates or target not in rates:
-            raise ValueError(f"API response invalid: {data}")
-
-        rate = rates[target]
+        rate = await self.fetch_rate(base, target)
 
         # Save in Redis for 10 minutes (600 sec)
         await self.cache.set(key, {"rate": rate})
