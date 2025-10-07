@@ -4,9 +4,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 
 import '../data/repositories/auth_repository.dart';
-import '../data/repositories/transaction_repository.dart';
+//import '../data/repositories/transaction_repository.dart';
 import '../logic/blocs/auth/auth_bloc.dart';
-import '../logic/blocs/transactions/transactions_bloc.dart';
+//import '../logic/blocs/transactions/transactions_bloc.dart';
 import 'api_client.dart';
 
 class AppProviders {
@@ -27,19 +27,19 @@ class AppProviders {
           update: (_, apiClient, storage, __) =>
               AuthRepository(apiClient: apiClient, secureStorage: storage),
         ),
-        ProxyProvider<ApiClient, TransactionRepository>(
-          update: (_, apiClient, __) => TransactionRepository(apiClient: apiClient),
-        ),
+        // ProxyProvider<ApiClient, TransactionRepository>(
+        //   update: (_, apiClient, __) => TransactionRepository(apiClient: apiClient),
+        // ),
 
         // Blocs
         ProxyProvider<AuthRepository, AuthBloc>(
           update: (_, authRepo, __) => AuthBloc(authRepository: authRepo),
           dispose: (_, bloc) => bloc.close(),
         ),
-        ProxyProvider<TransactionRepository, TransactionsBloc>(
-          update: (_, txnRepo, __) => TransactionsBloc(transactionRepository: txnRepo),
-          dispose: (_, bloc) => bloc.close(),
-        ),
+        // ProxyProvider<TransactionRepository, TransactionsBloc>(
+        //   update: (_, txnRepo, __) => TransactionsBloc(transactionRepository: txnRepo),
+        //   dispose: (_, bloc) => bloc.close(),
+        // ),
       ],
       child: child,
     );
