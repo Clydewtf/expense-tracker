@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/adapters.dart';
-import 'package:provider/provider.dart';
 import 'core/di.dart';
-import 'presentation/screens/login_screen.dart';
+import 'core/app_router.dart';
 
 
 void main() async {
@@ -13,11 +11,7 @@ void main() async {
   // Регистрация адаптеров для моделей
   // Hive.registerAdapter(TransactionAdapter());
 
-  runApp(
-    AppProviders.setup(
-      child: const MyApp(),
-    ),
-  );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -25,12 +19,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Expense Tracker',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+    return AppProviders.setup(
+      child: MaterialApp(
+        title: 'Expense Tracker',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
+          useMaterial3: true,
+        ),
+        onGenerateRoute: AppRouter.generateRoute,
+        initialRoute: '/',
       ),
-      home: const LoginScreen(),
     );
   }
 }
