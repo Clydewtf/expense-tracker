@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/api_client.dart';
+import 'package:jwt_decode/jwt_decode.dart';
 
 
 class AuthRepository {
@@ -49,6 +50,19 @@ class AuthRepository {
   Future<bool> isLoggedIn() async {
     final token = await _secureStorage.read(key: 'access_token');
     return token != null;
+  }
+
+  Future<int?> getCurrentUserId() async {
+    final token = await _secureStorage.read(key: 'access_token');
+    if (token == null) return null;
+
+    try {
+      final payload = Jwt.parseJwt(token);
+      final sub = payload['sub'];
+      return sub != null ? int.tryParse(sub) : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   String _handleError(DioException e) {

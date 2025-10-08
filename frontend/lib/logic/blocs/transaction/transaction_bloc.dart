@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/models/transaction_model.dart';
+import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/transaction_repository.dart';
 part 'transaction_event.dart';
 part 'transaction_state.dart';
@@ -7,23 +8,34 @@ part 'transaction_state.dart';
 
 class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
   final TransactionRepository transactionRepository;
+  final AuthRepository authRepository;
 
-  TransactionsBloc({required this.transactionRepository}) : super(TransactionsInitial()) {
+  TransactionsBloc({
+    required this.transactionRepository,
+    required this.authRepository,
+  }) : super(TransactionsInitial()) {
     on<LoadTransactions>(_onLoadTransactions);
     on<LoadTransactionById>(_onLoadTransactionById);
     on<AddTransactionEvent>(_onAddTransaction);
     on<DeleteTransactionEvent>(_onDeleteTransaction);
   }
 
-  Future<void> _onLoadTransactions(
-      LoadTransactions event, Emitter<TransactionsState> emit) async {
+  Future<void> _refreshTransactions(Emitter<TransactionsState> emit) async {
     emit(TransactionsLoading());
     try {
-      final txns = await transactionRepository.getTransactions();
+      final userId = await authRepository.getCurrentUserId();
+      if (userId == null) throw Exception('User not logged in');
+
+      final txns = await transactionRepository.getTransactions(userId: userId);
       emit(TransactionsLoaded(txns));
     } catch (e) {
-      emit(TransactionsError(e.toString()));
+      emit(TransactionsError('Failed to load transactions: ${e.toString()}'));
     }
+  }
+
+  Future<void> _onLoadTransactions(
+      LoadTransactions event, Emitter<TransactionsState> emit) async {
+    await _refreshTransactions(emit);
   }
 
   Future<void> _onLoadTransactionById(
@@ -33,34 +45,42 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
       final txn = await transactionRepository.getTransactionById(event.id);
       emit(TransactionDetailLoaded(txn));
     } catch (e) {
-      emit(TransactionsError(e.toString()));
+      emit(TransactionsError('Failed to load transaction: ${e.toString()}'));
     }
   }
 
   Future<void> _onAddTransaction(
       AddTransactionEvent event, Emitter<TransactionsState> emit) async {
-    if (state is TransactionsLoaded) {
-      final current = List<TransactionModel>.from((state as TransactionsLoaded).transactions);
-      try {
-        final added = await transactionRepository.addTransaction(event.transaction);
+    try {
+      final userId = await authRepository.getCurrentUserId();
+      if (userId == null) throw Exception('User not logged in');
+      
+      final added = await transactionRepository.addTransaction(event.transaction);
+
+      if (state is TransactionsLoaded) {
+        final current =
+            List<TransactionModel>.from((state as TransactionsLoaded).transactions);
         current.add(added);
         emit(TransactionsLoaded(current));
-      } catch (e) {
-        emit(TransactionsError(e.toString()));
+      } else {
+        await _refreshTransactions(emit);
       }
+    } catch (e) {
+      emit(TransactionsError('Failed to add transaction: ${e.toString()}'));
     }
   }
 
   Future<void> _onDeleteTransaction(
       DeleteTransactionEvent event, Emitter<TransactionsState> emit) async {
     if (state is TransactionsLoaded) {
-      final current = List<TransactionModel>.from((state as TransactionsLoaded).transactions);
+      final current =
+          List<TransactionModel>.from((state as TransactionsLoaded).transactions);
       try {
         await transactionRepository.deleteTransaction(event.id);
         current.removeWhere((txn) => txn.id == event.id);
         emit(TransactionsLoaded(current));
       } catch (e) {
-        emit(TransactionsError(e.toString()));
+        emit(TransactionsError('Failed to delete transaction: ${e.toString()}'));
       }
     }
   }

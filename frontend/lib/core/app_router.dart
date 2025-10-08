@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../presentation/screens/auth/login_screen.dart';
 import '../presentation/screens/auth/register_screen.dart';
 import '../presentation/screens/home/home_screen.dart';
+import '../presentation/screens/transaction/transactions_screen.dart';
+
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -12,6 +14,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const RegisterScreen());
       case '/home':
         return MaterialPageRoute(builder: (_) => const HomeScreen());
+      case '/transactions':
+        return MaterialPageRoute(builder: (_) => const TransactionsScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

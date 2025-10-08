@@ -8,11 +8,12 @@ class TransactionRepository {
 
   TransactionRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
-  Future<List<TransactionModel>> getTransactions() async {
+  Future<List<TransactionModel>> getTransactions({required int userId}) async {
     try {
       final response = await _apiClient.request(
-        '/transactions',
+        '/transactions/',
         method: 'GET',
+        queryParameters: {'user_id': userId},
         requiresAuth: true,
       );
 
