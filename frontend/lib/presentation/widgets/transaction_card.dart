@@ -18,9 +18,6 @@ class TransactionCard extends StatelessWidget {
           '${txn.date.toLocal()}'.split(' ')[0],
           style: const TextStyle(fontSize: 12),
         ),
-        onTap: () {
-          // TODO: перейти к деталям транзакции
-        },
       ),
     );
   }

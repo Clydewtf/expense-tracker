@@ -17,6 +17,8 @@ class TransactionDetailLoaded extends TransactionsState {
   TransactionDetailLoaded(this.transaction);
 }
 
+class TransactionDeleted extends TransactionsState {}
+
 class TransactionsError extends TransactionsState {
   final String message;
   TransactionsError(this.message);

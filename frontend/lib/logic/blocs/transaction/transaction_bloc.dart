@@ -14,6 +14,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
     required this.transactionRepository,
     required this.authRepository,
   }) : super(TransactionsInitial()) {
+
     on<LoadTransactions>(_onLoadTransactions);
     on<LoadTransactionById>(_onLoadTransactionById);
     on<AddTransactionEvent>(_onAddTransaction);
@@ -72,16 +73,19 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
 
   Future<void> _onDeleteTransaction(
       DeleteTransactionEvent event, Emitter<TransactionsState> emit) async {
-    if (state is TransactionsLoaded) {
-      final current =
-          List<TransactionModel>.from((state as TransactionsLoaded).transactions);
-      try {
-        await transactionRepository.deleteTransaction(event.id);
+    try {
+      await transactionRepository.deleteTransaction(event.id);
+      
+      if (state is TransactionsLoaded) {
+        final current =
+            List<TransactionModel>.from((state as TransactionsLoaded).transactions);
         current.removeWhere((txn) => txn.id == event.id);
         emit(TransactionsLoaded(current));
-      } catch (e) {
-        emit(TransactionsError('Failed to delete transaction: ${e.toString()}'));
+      } else {
+        emit(TransactionDeleted());
       }
+    } catch (e) {
+      emit(TransactionsError('Failed to delete transaction: ${e.toString()}'));
     }
   }
 }

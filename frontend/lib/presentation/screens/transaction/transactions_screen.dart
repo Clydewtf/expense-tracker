@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../logic/blocs/transaction/transaction_bloc.dart';
 import '../../widgets/transaction_card.dart';
-import 'add_transaction_screen.dart';
 
 
 class TransactionsScreen extends StatefulWidget {
@@ -16,6 +15,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   @override
   void initState() {
     super.initState();
+    _loadTransactions();
+  }
+
+  void _loadTransactions() {
     context.read<TransactionsBloc>().add(LoadTransactions());
   }
 
@@ -35,7 +38,18 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               itemCount: state.transactions.length,
               itemBuilder: (context, index) {
                 final txn = state.transactions[index];
-                return TransactionCard(txn: txn);
+                return InkWell(
+                  child: TransactionCard(txn: txn),
+                  onTap: () async {
+                    await Navigator.pushNamed(
+                      context,
+                      '/transaction_detail',
+                      arguments: txn.id!,
+                    );
+                    if (!mounted) return;
+                    _loadTransactions();
+                  },
+                );
               },
             );
           } else if (state is TransactionsError) {
@@ -46,10 +60,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
-          );
+          Navigator.pushNamed(context, '/add_transaction');
         },
         child: const Icon(Icons.add),
       ),
