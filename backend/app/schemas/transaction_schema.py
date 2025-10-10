@@ -21,3 +21,11 @@ class TransactionRead(BaseModel):
 
     class ConfigDict:
         from_attributes = True
+
+
+class TransactionUpdate(BaseModel):
+    amount: float | None = None
+    currency: str | None = None
+    category: str | None = None
+    description: str | None = None
+    date: datetime | None = None

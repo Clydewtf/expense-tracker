@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.transaction import Transaction
 
+
 class TransactionRepository:
     def __init__(self, db: Session):
         self.db = db
@@ -13,6 +14,13 @@ class TransactionRepository:
 
     def create(self, transaction: Transaction) -> Transaction:
         self.db.add(transaction)
+        self.db.commit()
+        self.db.refresh(transaction)
+        return transaction
+
+    def update(self, transaction: Transaction, updates: dict) -> Transaction:
+        for key, value in updates.items():
+            setattr(transaction, key, value)
         self.db.commit()
         self.db.refresh(transaction)
         return transaction
