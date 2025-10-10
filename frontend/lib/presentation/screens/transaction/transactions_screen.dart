@@ -34,10 +34,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             if (state.transactions.isEmpty) {
               return const Center(child: Text('No transactions yet.'));
             }
+            final sortedTxns = List.of(state.transactions)
+              ..sort((a, b) => b.date.compareTo(a.date));
+
             return ListView.builder(
-              itemCount: state.transactions.length,
+              itemCount: sortedTxns.length,
               itemBuilder: (context, index) {
-                final txn = state.transactions[index];
+                final txn = sortedTxns[index];
                 return InkWell(
                   child: TransactionCard(txn: txn),
                   onTap: () async {

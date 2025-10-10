@@ -18,6 +18,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
     on<LoadTransactions>(_onLoadTransactions);
     on<LoadTransactionById>(_onLoadTransactionById);
     on<AddTransactionEvent>(_onAddTransaction);
+    on<UpdateTransactionEvent>(_onUpdateTransaction);
     on<DeleteTransactionEvent>(_onDeleteTransaction);
   }
 
@@ -68,6 +69,25 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
       }
     } catch (e) {
       emit(TransactionsError('Failed to add transaction: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onUpdateTransaction(
+      UpdateTransactionEvent event, Emitter<TransactionsState> emit) async {
+    emit(TransactionsLoading());
+    try {
+      final updatedTxn = await transactionRepository.updateTransaction(event.id, event.updates);
+
+      if (state is TransactionsLoaded) {
+        final current = List<TransactionModel>.from((state as TransactionsLoaded).transactions);
+        final index = current.indexWhere((t) => t.id == event.id);
+        if (index != -1) current[index] = updatedTxn;
+        emit(TransactionsLoaded(current));
+      } else {
+        emit(TransactionDetailLoaded(updatedTxn));
+      }
+    } catch (e) {
+      emit(TransactionsError('Failed to update transaction: ${e.toString()}'));
     }
   }
 

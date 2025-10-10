@@ -51,6 +51,20 @@ class TransactionRepository {
     }
   }
 
+  Future<TransactionModel> updateTransaction(int id, Map<String, dynamic> updates) async {
+    try {
+      final response = await _apiClient.request(
+        '/transactions/$id',
+        method: 'PUT',
+        data: updates,
+        requiresAuth: true,
+      );
+      return TransactionModel.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['detail'] ?? 'Failed to update transaction');
+    }
+  }
+
   Future<void> deleteTransaction(int id) async {
     try {
       await _apiClient.request(
