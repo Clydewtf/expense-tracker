@@ -14,9 +14,11 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
     required this.transactionRepository,
     required this.authRepository,
   }) : super(TransactionsInitial()) {
+
     on<LoadTransactions>(_onLoadTransactions);
     on<LoadTransactionById>(_onLoadTransactionById);
     on<AddTransactionEvent>(_onAddTransaction);
+    on<UpdateTransactionEvent>(_onUpdateTransaction);
     on<DeleteTransactionEvent>(_onDeleteTransaction);
   }
 
@@ -70,18 +72,40 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
     }
   }
 
+  Future<void> _onUpdateTransaction(
+      UpdateTransactionEvent event, Emitter<TransactionsState> emit) async {
+    emit(TransactionsLoading());
+    try {
+      final updatedTxn = await transactionRepository.updateTransaction(event.id, event.updates);
+
+      if (state is TransactionsLoaded) {
+        final current = List<TransactionModel>.from((state as TransactionsLoaded).transactions);
+        final index = current.indexWhere((t) => t.id == event.id);
+        if (index != -1) current[index] = updatedTxn;
+        emit(TransactionsLoaded(current));
+      } else {
+        emit(TransactionDetailLoaded(updatedTxn));
+      }
+    } catch (e) {
+      emit(TransactionsError('Failed to update transaction: ${e.toString()}'));
+    }
+  }
+
   Future<void> _onDeleteTransaction(
       DeleteTransactionEvent event, Emitter<TransactionsState> emit) async {
-    if (state is TransactionsLoaded) {
-      final current =
-          List<TransactionModel>.from((state as TransactionsLoaded).transactions);
-      try {
-        await transactionRepository.deleteTransaction(event.id);
+    try {
+      await transactionRepository.deleteTransaction(event.id);
+      
+      if (state is TransactionsLoaded) {
+        final current =
+            List<TransactionModel>.from((state as TransactionsLoaded).transactions);
         current.removeWhere((txn) => txn.id == event.id);
         emit(TransactionsLoaded(current));
-      } catch (e) {
-        emit(TransactionsError('Failed to delete transaction: ${e.toString()}'));
+      } else {
+        emit(TransactionDeleted());
       }
+    } catch (e) {
+      emit(TransactionsError('Failed to delete transaction: ${e.toString()}'));
     }
   }
 }

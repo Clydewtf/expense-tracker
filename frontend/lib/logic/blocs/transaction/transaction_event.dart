@@ -15,6 +15,14 @@ class AddTransactionEvent extends TransactionsEvent {
   AddTransactionEvent(this.transaction);
 }
 
+
+class UpdateTransactionEvent extends TransactionsEvent {
+  final int id;
+  final Map<String, dynamic> updates;
+
+  UpdateTransactionEvent(this.id, this.updates);
+}
+
 class DeleteTransactionEvent extends TransactionsEvent {
   final int id;
   DeleteTransactionEvent(this.id);
