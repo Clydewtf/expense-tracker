@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'core/di.dart';
 import 'core/app_router.dart';
+import 'data/sources/local/hive_transaction.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
 
-  // Регистрация адаптеров для моделей
-  // Hive.registerAdapter(TransactionAdapter());
+  Hive.registerAdapter(HiveTransactionAdapter());
+  await Hive.openBox<HiveTransaction>('transactions');
 
   runApp(const MyApp());
 }
