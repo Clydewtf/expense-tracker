@@ -56,7 +56,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               if (!mounted) return;
 
               if (confirmed ?? false) {
-                context.read<TransactionsBloc>().add(DeleteTransactionEvent(widget.transactionId));
+                context.read<TransactionsBloc>().add(DeleteTransactionEvent(id: widget.transactionId));
               }
             },
           ),
@@ -85,6 +85,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Icon(
+                      txn.isSynced ? Icons.check_circle : Icons.sync_problem,
+                      color: txn.isSynced ? Colors.green : Colors.orange,
+                      size: 16,
+                    ),
                     Text(
                       'Amount: ${txn.amount} ${txn.currency}',
                       style: Theme.of(context).textTheme.titleLarge,

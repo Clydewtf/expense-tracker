@@ -2,12 +2,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/transaction_repository.dart';
+import '../../../data/sources/local/hive_transaction.dart';
 part 'transaction_event.dart';
 part 'transaction_state.dart';
 
 
 class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
-  final TransactionRepository transactionRepository;
+  final OfflineTransactionRepository transactionRepository;
   final AuthRepository authRepository;
 
   TransactionsBloc({
@@ -28,8 +29,11 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
       final userId = await authRepository.getCurrentUserId();
       if (userId == null) throw Exception('User not logged in');
 
-      final txns = await transactionRepository.getTransactions(userId: userId);
-      emit(TransactionsLoaded(txns));
+      await transactionRepository.syncTransactions();
+      await transactionRepository.getAllTransactions(userId);
+
+      final updatedLocal = transactionRepository.getAllLocal();
+      emit(TransactionsLoaded(updatedLocal.map((t) => t.toTransactionModel()).toList()));
     } catch (e) {
       emit(TransactionsError('Failed to load transactions: ${e.toString()}'));
     }
@@ -44,8 +48,31 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
       LoadTransactionById event, Emitter<TransactionsState> emit) async {
     emit(TransactionsLoading());
     try {
-      final txn = await transactionRepository.getTransactionById(event.id);
-      emit(TransactionDetailLoaded(txn));
+      final userId = await authRepository.getCurrentUserId();
+      
+      TransactionModel? txn;
+      if (userId != null) {
+        txn = await transactionRepository.getTransactionById(event.id, userId: userId);
+      }
+
+      if (txn == null) {
+        final localTxn = transactionRepository.getAllLocal()
+            .cast<HiveTransaction?>()
+            .firstWhere(
+              (t) => t?.id == event.id || t?.key == event.id,
+              orElse: () => null,
+            );
+
+        if (localTxn != null) {
+          txn = localTxn.toTransactionModel();
+        }
+      }
+
+      if (txn != null) {
+        emit(TransactionDetailLoaded(txn));
+      } else {
+        emit(TransactionsError('Transaction not found'));
+      }
     } catch (e) {
       emit(TransactionsError('Failed to load transaction: ${e.toString()}'));
     }
@@ -57,16 +84,15 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
       final userId = await authRepository.getCurrentUserId();
       if (userId == null) throw Exception('User not logged in');
       
-      final added = await transactionRepository.addTransaction(event.transaction);
+      await transactionRepository.addTransactionOffline(event.transaction);
 
       if (state is TransactionsLoaded) {
-        final current =
-            List<TransactionModel>.from((state as TransactionsLoaded).transactions);
-        current.add(added);
+        final current = List<TransactionModel>.from((state as TransactionsLoaded).transactions);
+        current.add(event.transaction);
         emit(TransactionsLoaded(current));
-      } else {
-        await _refreshTransactions(emit);
       }
+
+      await transactionRepository.syncTransactions();
     } catch (e) {
       emit(TransactionsError('Failed to add transaction: ${e.toString()}'));
     }
@@ -76,16 +102,38 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
       UpdateTransactionEvent event, Emitter<TransactionsState> emit) async {
     emit(TransactionsLoading());
     try {
-      final updatedTxn = await transactionRepository.updateTransaction(event.id, event.updates);
+      final localTxn = transactionRepository.getAllLocal()
+          .cast<HiveTransaction?>()
+          .firstWhere(
+            (t) => t?.id == event.id || t?.key == event.id,
+            orElse: () => null,
+          );
+
+      if (localTxn == null) {
+        emit(TransactionsError('Transaction not found locally'));
+        return;
+      }
+
+      final updatedTxn = TransactionModel(
+        id: localTxn.id,
+        amount: event.updates['amount'] ?? localTxn.amount,
+        currency: event.updates['currency'] ?? localTxn.currency,
+        category: event.updates['category'] ?? localTxn.category,
+        description: event.updates['description'] ?? localTxn.description,
+        date: localTxn.date,
+        isSynced: false,
+      );
+      await transactionRepository.updateTransactionOffline(localTxn.key as int, updatedTxn);
 
       if (state is TransactionsLoaded) {
         final current = List<TransactionModel>.from((state as TransactionsLoaded).transactions);
         final index = current.indexWhere((t) => t.id == event.id);
         if (index != -1) current[index] = updatedTxn;
         emit(TransactionsLoaded(current));
-      } else {
-        emit(TransactionDetailLoaded(updatedTxn));
       }
+
+      await transactionRepository.syncTransactions();
+      emit(TransactionDetailLoaded(updatedTxn));
     } catch (e) {
       emit(TransactionsError('Failed to update transaction: ${e.toString()}'));
     }
@@ -94,16 +142,24 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
   Future<void> _onDeleteTransaction(
       DeleteTransactionEvent event, Emitter<TransactionsState> emit) async {
     try {
-      await transactionRepository.deleteTransaction(event.id);
-      
-      if (state is TransactionsLoaded) {
-        final current =
-            List<TransactionModel>.from((state as TransactionsLoaded).transactions);
-        current.removeWhere((txn) => txn.id == event.id);
-        emit(TransactionsLoaded(current));
-      } else {
-        emit(TransactionDeleted());
+      final localTxn = transactionRepository.getAllLocal()
+          .cast<HiveTransaction?>()
+          .firstWhere((t) => t?.id == event.id || t?.key == event.id, orElse: () => null);
+
+      if (localTxn == null) {
+        emit(TransactionsError('Transaction not found locally'));
+        return;
       }
+      await transactionRepository.deleteTransactionOffline(localTxn.key as int, serverId: localTxn.id);
+
+      if (state is TransactionsLoaded) {
+        final current = List<TransactionModel>.from((state as TransactionsLoaded).transactions);
+        current.removeWhere((t) => t.id == event.id || t.localKey == localTxn.key);
+        emit(TransactionsLoaded(current));
+      }
+
+      await transactionRepository.syncTransactions();
+      emit(TransactionDeleted());
     } catch (e) {
       emit(TransactionsError('Failed to delete transaction: ${e.toString()}'));
     }

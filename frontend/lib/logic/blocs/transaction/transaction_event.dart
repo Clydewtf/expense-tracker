@@ -25,5 +25,6 @@ class UpdateTransactionEvent extends TransactionsEvent {
 
 class DeleteTransactionEvent extends TransactionsEvent {
   final int id;
-  DeleteTransactionEvent(this.id);
+  final int? localKey;
+  DeleteTransactionEvent({required this.id, this.localKey});
 }

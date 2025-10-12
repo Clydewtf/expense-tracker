@@ -5,13 +5,18 @@ import 'package:provider/provider.dart';
 
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/transaction_repository.dart';
+import '../data/sources/local/local_transaction_source.dart';
+import '../data/sources/remote/remote_transaction_source.dart';
 import '../logic/blocs/auth/auth_bloc.dart';
 import '../logic/blocs/transaction/transaction_bloc.dart';
 import 'api_client.dart';
 
 
 class AppProviders {
-  static Widget setup({required Widget child}) {
+  static Future<Widget> setup({
+    required Widget child,
+    required LocalTransactionSource localSource,
+  }) async {
     return MultiProvider(
       providers: [
         // Core dependencies
@@ -23,13 +28,26 @@ class AppProviders {
           update: (_, dio, storage, __) => ApiClient(dio: dio, secureStorage: storage),
         ),
 
-        // Repositories
+        // Local source (already initialized)
+        Provider<LocalTransactionSource>.value(value: localSource),
+
+        // Remote source
+        ProxyProvider<ApiClient, RemoteTransactionSource>(
+          update: (_, apiClient, __) => RemoteTransactionSource(apiClient: apiClient),
+        ),
+
+        // Offline repository
+        ProxyProvider2<LocalTransactionSource, RemoteTransactionSource, OfflineTransactionRepository>(
+          update: (_, localSource, remoteSource, __) => OfflineTransactionRepository(
+            localSource: localSource,
+            remoteSource: remoteSource,
+          ),
+        ),
+
+        // Auth repository
         ProxyProvider2<ApiClient, FlutterSecureStorage, AuthRepository>(
           update: (_, apiClient, storage, __) =>
               AuthRepository(apiClient: apiClient, secureStorage: storage),
-        ),
-        ProxyProvider<ApiClient, TransactionRepository>(
-          update: (_, apiClient, __) => TransactionRepository(apiClient: apiClient),
         ),
 
         // Blocs
@@ -37,7 +55,8 @@ class AppProviders {
           update: (_, authRepo, __) => AuthBloc(authRepository: authRepo),
           dispose: (_, bloc) => bloc.close(),
         ),
-        ProxyProvider2<TransactionRepository, AuthRepository, TransactionsBloc>(
+
+        ProxyProvider2<OfflineTransactionRepository, AuthRepository, TransactionsBloc>(
           update: (_, txnRepo, authRepo, __) =>
               TransactionsBloc(transactionRepository: txnRepo, authRepository: authRepo),
           dispose: (_, bloc) => bloc.close(),

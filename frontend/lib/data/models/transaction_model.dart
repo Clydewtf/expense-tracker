@@ -6,6 +6,8 @@ class TransactionModel {
   final String category;
   final String? description;
   final DateTime date;
+  final bool isSynced;
+  int? localKey;
 
   TransactionModel({
     this.id,
@@ -15,6 +17,8 @@ class TransactionModel {
     required this.category,
     this.description,
     required this.date,
+    this.isSynced = true,
+    this.localKey,
   });
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) => TransactionModel(
