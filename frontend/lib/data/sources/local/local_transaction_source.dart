@@ -1,5 +1,4 @@
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../models/transaction_model.dart';
 import 'hive_transaction.dart';
 
 
@@ -50,43 +49,8 @@ class LocalTransactionSource {
     await _box.put(key, txn);
   }
 
-  Future<void> markDeleted(int key) async {
-    final txn = _box.get(key);
-    if (txn != null) {
-      txn.operationType = 'delete';
-      txn.isSynced = false;
-      await txn.save();
-    }
-  }
-
   Future<void> delete(int key) async {
     await _box.delete(key);
-  }
-
-  Future<void> markSynced(int key, {TransactionModel? serverModel}) async {
-    final txn = _box.get(key);
-    if (txn == null) return;
-
-    if (txn.operationType == 'delete') {
-      // remove locally after remote delete confirmed
-      await _box.delete(key);
-      return;
-    }
-
-    // If server returned a canonical model (with server id / normalized fields),
-    // map those values back to the local item.
-    if (serverModel != null) {
-      txn.id = serverModel.id;
-      txn.amount = serverModel.amount;
-      txn.currency = serverModel.currency;
-      txn.category = serverModel.category;
-      txn.description = serverModel.description;
-      txn.date = serverModel.date;
-    }
-
-    txn.isSynced = true;
-    txn.operationType = null;
-    await txn.save();
   }
 
   Future<void> clear() async {

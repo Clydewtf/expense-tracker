@@ -44,10 +44,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 return InkWell(
                   child: TransactionCard(txn: txn),
                   onTap: () async {
+                    final txnId = txn.id ?? txn.localKey;
+                    if (txnId == null) return;
+
                     await Navigator.pushNamed(
                       context,
                       '/transaction_detail',
-                      arguments: txn.id!,
+                      arguments: txnId,
                     );
                     if (!mounted) return;
                     _loadTransactions();

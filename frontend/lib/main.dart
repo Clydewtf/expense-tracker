@@ -3,16 +3,24 @@ import 'package:hive_flutter/adapters.dart';
 import 'core/di.dart';
 import 'core/app_router.dart';
 import 'data/sources/local/hive_transaction.dart';
+import 'data/sources/local/local_transaction_source.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Hive.initFlutter();
-
   Hive.registerAdapter(HiveTransactionAdapter());
-  await Hive.openBox<HiveTransaction>('transactions');
 
-  runApp(const MyApp());
+  final localSource = LocalTransactionSource();
+  await localSource.init();
+
+  runApp(
+    await AppProviders.setup(
+      child: const MyApp(),
+      localSource: localSource,
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -20,17 +28,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppProviders.setup(
-      child: MaterialApp(
-        title: 'Expense Tracker',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
-          useMaterial3: true,
-        ),
-        onGenerateRoute: AppRouter.generateRoute,
-        initialRoute: '/',
+    return MaterialApp(
+      title: 'Expense Tracker',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
+        useMaterial3: true,
       ),
+      onGenerateRoute: AppRouter.generateRoute,
+      initialRoute: '/',
     );
   }
 }

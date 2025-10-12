@@ -49,7 +49,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     };
 
     context.read<TransactionsBloc>().add(
-      UpdateTransactionEvent(widget.transaction.id!, updates),
+      UpdateTransactionEvent(widget.transaction.id ?? widget.transaction.localKey!, updates),
     );
   }
 

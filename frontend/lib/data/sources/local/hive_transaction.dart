@@ -58,13 +58,15 @@ class HiveTransaction extends HiveObject {
     final int? serverId = id;
     final int? localKey = isInBox ? (key as int?) : null;
     return TransactionModel(
-      id: serverId ?? localKey,
+      id: serverId,
       userId: null,
       amount: amount,
       currency: currency,
       category: category,
       description: description,
       date: date,
+      isSynced: isSynced,
+      localKey: serverId ?? localKey,
     );
   }
 }
