@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../logic/blocs/transaction/transaction_bloc.dart';
+import '../../../logic/blocs/user/user_bloc.dart';
 
 
 class AddTransactionScreen extends StatefulWidget {
@@ -16,7 +17,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
   final _categoryController = TextEditingController();
-  final _currencyController = TextEditingController(text: 'USD');
+  String? selectedCurrency;
+
+  final List<String> currencies = ['USD', 'EUR', 'RUB'];
+
+  @override
+  void initState() {
+    super.initState();
+    final userState = context.read<UserBloc>().state;
+    if (userState is UserLoaded) {
+      selectedCurrency = userState.user.defaultCurrency;
+    } else {
+      selectedCurrency = 'USD';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,25 +68,28 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   validator: (val) =>
                       val == null || val.isEmpty ? 'Enter category' : null,
                 ),
-                TextFormField(
-                  controller: _currencyController,
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedCurrency,
+                  items: currencies
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .toList(),
+                  onChanged: (value) => setState(() => selectedCurrency = value),
                   decoration: const InputDecoration(labelText: 'Currency'),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
-                    if (_formKey.currentState!.validate()) {
+                    if (_formKey.currentState!.validate() && selectedCurrency != null) {
                       FocusScope.of(context).unfocus();
                       final txn = TransactionModel(
                         amount: double.parse(_amountController.text),
                         category: _categoryController.text,
                         description: _descriptionController.text,
-                        currency: _currencyController.text,
+                        currency: selectedCurrency!,
                         date: DateTime.now(),
                       );
-                      context
-                          .read<TransactionsBloc>()
-                          .add(AddTransactionEvent(txn));
+                      context.read<TransactionsBloc>().add(AddTransactionEvent(txn));
                     }
                   },
                   child: const Text('Add Transaction'),

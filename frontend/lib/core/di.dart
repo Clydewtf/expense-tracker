@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 
+import '../data/repositories/user_repository.dart';
+import '../logic/blocs/user/user_bloc.dart';
 import '../services/network_service.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/transaction_repository.dart';
@@ -63,6 +65,11 @@ class AppProviders {
               AuthRepository(apiClient: apiClient, secureStorage: storage),
         ),
 
+        // User repository
+        ProxyProvider<ApiClient, UserRepository>(
+          update: (_, apiClient, __) => UserRepository(apiClient: apiClient),
+        ),
+
         // Blocs
         ProxyProvider<AuthRepository, AuthBloc>(
           update: (_, authRepo, __) => AuthBloc(authRepository: authRepo),
@@ -72,6 +79,11 @@ class AppProviders {
         ProxyProvider2<OfflineTransactionRepository, AuthRepository, TransactionsBloc>(
           update: (_, txnRepo, authRepo, previous) => previous ?? 
               TransactionsBloc(transactionRepository: txnRepo, authRepository: authRepo),
+          dispose: (_, bloc) => bloc.close(),
+        ),
+
+        ProxyProvider<UserRepository, UserBloc>(
+          update: (_, userRepo, __) => UserBloc(userRepository: userRepo)..add(LoadUser()),
           dispose: (_, bloc) => bloc.close(),
         ),
       ],
