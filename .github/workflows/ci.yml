@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [ feature/tests, develop ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18-bookworm
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: expense_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d expense_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+
+    - name: Set PYTHONPATH
+      run: echo "PYTHONPATH=$PWD/backend" >> $GITHUB_ENV
+
+    - name: Set environment variables
+      run: |
+        export POSTGRES_USER=postgres
+        export POSTGRES_PASSWORD=postgres
+        export POSTGRES_DB=expense_db
+        export POSTGRES_HOST=localhost
+        export POSTGRES_PORT=5432
+        export JWT_SECRET=supersecret
+        export JWT_ALGORITHM=HS256
+        export REDIS_HOST=localhost
+        export REDIS_PORT=6379
+
+    - name: Run DB migrations
+      run: |
+        cd backend
+        alembic upgrade head
+
+    - name: Run tests
+      run: |
+        pytest backend/tests --maxfail=1 --disable-warnings -q

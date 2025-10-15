@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:18-bookworm
+    container_name: expense_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: expense_db
+    ports:
+      - "5432:5432"
+    networks:
+      - exp_net
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: expense_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - exp_net
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: my_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    networks:
+      - exp_net
+
+volumes:
+  postgres_data:
+
+networks:
+  exp_net:
+    driver: bridge
