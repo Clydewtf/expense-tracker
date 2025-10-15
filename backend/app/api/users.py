@@ -9,6 +9,11 @@ from app.core.security import hash_password, verify_password, create_access_toke
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+@router.get("/me", response_model=UserRead)
+def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
     repo = UserRepository(db)
