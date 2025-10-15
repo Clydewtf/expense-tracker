@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 
+import '../services/network_service.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/transaction_repository.dart';
 import '../data/sources/local/local_transaction_source.dart';
@@ -23,6 +24,9 @@ class AppProviders {
         Provider<Dio>(create: (_) => Dio()),
         Provider<FlutterSecureStorage>(create: (_) => const FlutterSecureStorage()),
 
+        // Services
+        ChangeNotifierProvider<NetworkService>(create: (_) => NetworkService()),
+
         // API client
         ProxyProvider2<Dio, FlutterSecureStorage, ApiClient>(
           update: (_, dio, storage, __) => ApiClient(dio: dio, secureStorage: storage),
@@ -37,11 +41,20 @@ class AppProviders {
         ),
 
         // Offline repository
-        ProxyProvider2<LocalTransactionSource, RemoteTransactionSource, OfflineTransactionRepository>(
-          update: (_, localSource, remoteSource, __) => OfflineTransactionRepository(
-            localSource: localSource,
-            remoteSource: remoteSource,
-          ),
+        ProxyProvider3<LocalTransactionSource, RemoteTransactionSource, NetworkService, OfflineTransactionRepository>(
+          update: (_, localSource, remoteSource, networkService, __) {
+            final repo = OfflineTransactionRepository(
+              localSource: localSource,
+              remoteSource: remoteSource,
+            );
+
+            networkService.onReconnect = () async {
+              await Future.delayed(const Duration(seconds: 3));
+              await repo.syncTransactions();
+            };
+
+            return repo;
+          },
         ),
 
         // Auth repository
@@ -57,7 +70,7 @@ class AppProviders {
         ),
 
         ProxyProvider2<OfflineTransactionRepository, AuthRepository, TransactionsBloc>(
-          update: (_, txnRepo, authRepo, __) =>
+          update: (_, txnRepo, authRepo, previous) => previous ?? 
               TransactionsBloc(transactionRepository: txnRepo, authRepository: authRepo),
           dispose: (_, bloc) => bloc.close(),
         ),
