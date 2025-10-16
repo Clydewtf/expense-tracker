@@ -16,7 +16,7 @@ class RedisCache:
         value = await self.client.get(key)
         return json.loads(value) if value else None
 
-    async def set(self, key: str, value, ttl: int = 600):
+    async def set(self, key: str, value, ttl: int = 3600 * 2):
         await self.client.setex(key, ttl, json.dumps(value))
 
     async def delete(self, key: str):
