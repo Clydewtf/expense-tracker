@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../logic/blocs/transaction/transaction_bloc.dart';
+import '../../../logic/blocs/user/user_bloc.dart';
+import '../../../logic/cubits/rates_cubit.dart';
 
 
 class TransactionDetailScreen extends StatefulWidget {
@@ -21,6 +23,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userState = context.watch<UserBloc>().state;
+    String? defaultCurrency;
+    if (userState is UserLoaded) {
+      defaultCurrency = userState.user.defaultCurrency;
+    }
+
+    final ratesCubit = context.watch<RatesCubit>();
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transaction Details'),
@@ -80,6 +90,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             } else if (state is TransactionDetailLoaded) {
               final txn = state.transaction;
               final dateOnly = txn.date.toLocal().toString().split(' ')[0];
+              // final ratesCubit = context.watch<RatesCubit>();
+              // final convertedAmount = ratesCubit.convert(txn.currency, user.defaultCurrency, txn.amount);
+              double? convertedAmount;
+              if (defaultCurrency != null) {
+                convertedAmount = ratesCubit.convert(txn.currency, defaultCurrency, txn.amount);
+              }
+
               return Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -94,7 +111,17 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       'Amount: ${txn.amount} ${txn.currency}',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    const SizedBox(height: 8),
+                    if (defaultCurrency != null && txn.currency != defaultCurrency)
+                      Text(
+                        convertedAmount != null
+                            ? '${convertedAmount.toStringAsFixed(2)} $defaultCurrency'
+                            : 'Converting...',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Colors.grey),
+                      ),
+                    const SizedBox(height: 16),
                     Text('Category: ${txn.category}'),
                     const SizedBox(height: 8),
                     if (txn.description != null && txn.description!.isNotEmpty)

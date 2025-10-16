@@ -33,9 +33,33 @@ class ExchangeService:
             return cached["rate"]
 
         rate = await self.fetch_rate(base, target)
-
-        # Save in Redis for 10 minutes (600 sec)
         await self.cache.set(key, {"rate": rate})
 
         print(f"[CACHE MISS] Saved new rate for {base}->{target}: {rate}")
         return rate
+
+    async def fetch_all_rates(self, base: str) -> dict:
+        """Fetch all currency rates for a given base from external API."""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{self.BASE_URL}/{base}") as resp:
+                data = await resp.json()
+
+        rates = data.get("rates")
+        if not rates:
+            raise ValueError(f"API response invalid: {data}")
+        return rates
+
+    async def get_all_rates(self, base: str) -> dict:
+        """Get all exchange rates for base currency from cache or API."""
+        key = f"exchange:{base}:all"
+
+        cached = await self.cache.get(key)
+        if cached:
+            print(f"[CACHE HIT] All rates for {base}")
+            return cached
+
+        rates = await self.fetch_all_rates(base)
+        await self.cache.set(key, rates)
+
+        print(f"[CACHE MISS] Saved all rates for {base}")
+        return rates
