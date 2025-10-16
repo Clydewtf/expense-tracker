@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.user import User
 
+
 class UserRepository:
     def __init__(self, db: Session):
         self.db = db
@@ -13,6 +14,14 @@ class UserRepository:
 
     def create(self, user: User) -> User:
         self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
+    def update(self, user: User, update_data: dict) -> User:
+        for key, value in update_data.items():
+            if hasattr(user, key) and value is not None:
+                setattr(user, key, value)
         self.db.commit()
         self.db.refresh(user)
         return user

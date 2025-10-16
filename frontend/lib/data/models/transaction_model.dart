@@ -22,22 +22,22 @@ class TransactionModel {
   });
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) => TransactionModel(
-        id: json['id'] as int?,
-        userId: json['user_id'] as int?,
-        amount: (json['amount'] as num).toDouble(),
-        currency: json['currency'],
-        category: json['category'],
-        description: json['description'] as String?,
-        date: DateTime.parse(json['date']),
-      );
+      id: json['id'] as int?,
+      userId: json['user_id'] as int?,
+      amount: (json['amount'] as num).toDouble(),
+      currency: json['currency'],
+      category: json['category'],
+      description: json['description'] as String?,
+      date: DateTime.parse(json['date']),
+    );
 
   Map<String, dynamic> toJson() => {
-        if (id != null) 'id': id,
-        if (userId != null) 'user_id': userId,
-        'amount': amount,
-        'currency': currency,
-        'category': category,
-        'description': description,
-        'date': date.toIso8601String(),
-      };
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      'amount': amount,
+      'currency': currency,
+      'category': category,
+      'description': description,
+      'date': date.toIso8601String(),
+    };
 }

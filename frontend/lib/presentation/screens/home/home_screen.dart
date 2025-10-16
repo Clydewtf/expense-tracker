@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../../logic/blocs/auth/auth_bloc.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -22,11 +20,10 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () async {
-                context.read<AuthBloc>().add(AuthLogoutRequested());
-                Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+              onPressed: () {
+                Navigator.pushNamed(context, '/profile');
               },
-              child: const Text('Logout'),
+              child: const Text('Profile'),
             ),
           ],
         ),

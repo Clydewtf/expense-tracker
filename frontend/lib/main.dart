@@ -4,6 +4,7 @@ import 'core/di.dart';
 import 'core/app_router.dart';
 import 'data/sources/local/hive_transaction.dart';
 import 'data/sources/local/local_transaction_source.dart';
+import 'presentation/widgets/network_banner.dart';
 
 
 void main() async {
@@ -17,8 +18,8 @@ void main() async {
 
   runApp(
     await AppProviders.setup(
-      child: const MyApp(),
       localSource: localSource,
+      child: const MyApp(),
     ),
   );
 }
@@ -37,6 +38,12 @@ class MyApp extends StatelessWidget {
       ),
       onGenerateRoute: AppRouter.generateRoute,
       initialRoute: '/',
+
+      builder: (context, child) {
+        return NetworkBanner(
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }
