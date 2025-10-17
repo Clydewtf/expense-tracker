@@ -30,7 +30,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     }
 
     final ratesCubit = context.watch<RatesCubit>();
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transaction Details'),
@@ -40,7 +40,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             onPressed: () {
               final state = context.read<TransactionsBloc>().state;
               if (state is TransactionDetailLoaded) {
-                Navigator.pushNamed(context, '/edit-transaction', arguments: state.transaction);
+                Navigator.pushNamed(
+                  context,
+                  '/edit-transaction',
+                  arguments: state.transaction,
+                );
               }
             },
           ),
@@ -62,9 +66,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   ],
                 ),
               );
-              
               if (!mounted) return;
-
               if (confirmed ?? false) {
                 context.read<TransactionsBloc>().add(DeleteTransactionEvent(id: widget.transactionId));
               }
@@ -76,8 +78,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         listener: (context, state) {
           if (state is TransactionDeleted) {
             Navigator.pop(context, true);
-          }
-          else if (state is TransactionsError) {
+          } else if (state is TransactionsError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
             );
@@ -90,25 +91,40 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             } else if (state is TransactionDetailLoaded) {
               final txn = state.transaction;
               final dateOnly = txn.date.toLocal().toString().split(' ')[0];
-              // final ratesCubit = context.watch<RatesCubit>();
-              // final convertedAmount = ratesCubit.convert(txn.currency, user.defaultCurrency, txn.amount);
               double? convertedAmount;
               if (defaultCurrency != null) {
                 convertedAmount = ratesCubit.convert(txn.currency, defaultCurrency, txn.amount);
               }
+
+              final isExpense = txn.type == 'expense';
+              final typeColor = isExpense ? Colors.red : Colors.green;
+              final typeLabel = isExpense ? 'Expense' : 'Income';
+              final typeIcon = isExpense ? Icons.arrow_upward : Icons.arrow_downward;
 
               return Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      txn.isSynced ? Icons.check_circle : Icons.sync_problem,
-                      color: txn.isSynced ? Colors.green : Colors.orange,
-                      size: 16,
+                    Row(
+                      children: [
+                        Icon(typeIcon, color: typeColor),
+                        const SizedBox(width: 8),
+                        Text(
+                          typeLabel,
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: typeColor),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          txn.isSynced ? Icons.check_circle : Icons.sync_problem,
+                          color: txn.isSynced ? Colors.green : Colors.orange,
+                          size: 20,
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 16),
                     Text(
-                      'Amount: ${txn.amount} ${txn.currency}',
+                      'Amount: ${txn.amount.toStringAsFixed(2)} ${txn.currency}',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     if (defaultCurrency != null && txn.currency != defaultCurrency)

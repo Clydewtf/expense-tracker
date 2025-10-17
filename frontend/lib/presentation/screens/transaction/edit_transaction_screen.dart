@@ -18,7 +18,15 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   late TextEditingController _descriptionController;
   late TextEditingController _amountController;
   late TextEditingController _categoryController;
-  late TextEditingController _currencyController;
+
+  String? selectedCurrency;
+  late String selectedType;
+
+  final List<String> currencies = ['USD', 'EUR', 'RUB'];
+  final List<Map<String, dynamic>> types = [
+    {'label': 'Expense', 'value': 'expense', 'icon': Icons.arrow_upward, 'color': Colors.red},
+    {'label': 'Income', 'value': 'income', 'icon': Icons.arrow_downward, 'color': Colors.green},
+  ];
 
   @override
   void initState() {
@@ -26,7 +34,9 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     _descriptionController = TextEditingController(text: widget.transaction.description);
     _amountController = TextEditingController(text: widget.transaction.amount.toString());
     _categoryController = TextEditingController(text: widget.transaction.category);
-    _currencyController = TextEditingController(text: widget.transaction.currency);
+
+    selectedCurrency = widget.transaction.currency;
+    selectedType = widget.transaction.type;
   }
 
   @override
@@ -34,7 +44,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     _descriptionController.dispose();
     _amountController.dispose();
     _categoryController.dispose();
-    _currencyController.dispose();
     super.dispose();
   }
 
@@ -45,7 +54,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       'description': _descriptionController.text,
       'amount': double.tryParse(_amountController.text) ?? 0,
       'category': _categoryController.text,
-      'currency': _currencyController.text,
+      'currency': selectedCurrency,
+      'type': selectedType,
     };
 
     context.read<TransactionsBloc>().add(
@@ -74,42 +84,101 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
-            child: Column(
+            child: ListView(
               children: [
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(labelText: 'Description'),
+                Text(
+                  'Transaction type',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: types.map((type) {
+                    final isSelected = selectedType == type['value'];
+                    return ChoiceChip(
+                      label: Row(
+                        children: [
+                          Icon(type['icon'], color: isSelected ? Colors.white : type['color']),
+                          const SizedBox(width: 6),
+                          Text(type['label']),
+                        ],
+                      ),
+                      selectedColor: type['color'],
+                      selected: isSelected,
+                      onSelected: (_) {
+                        setState(() => selectedType = type['value']);
+                      },
+                    );
+                  }).toList(),
+                ),
+
+                const SizedBox(height: 24),
+
                 TextFormField(
                   controller: _amountController,
-                  decoration: const InputDecoration(labelText: 'Amount'),
+                  decoration: const InputDecoration(
+                    labelText: 'Amount',
+                    prefixIcon: Icon(Icons.attach_money),
+                  ),
                   keyboardType: TextInputType.number,
                   validator: (val) =>
                       val == null || val.isEmpty ? 'Enter amount' : null,
                 ),
+
+                const SizedBox(height: 16),
+
                 TextFormField(
                   controller: _categoryController,
-                  decoration: const InputDecoration(labelText: 'Category'),
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    prefixIcon: Icon(Icons.category),
+                  ),
                   validator: (val) =>
                       val == null || val.isEmpty ? 'Enter category' : null,
                 ),
+
+                const SizedBox(height: 16),
+
                 TextFormField(
-                  controller: _currencyController,
-                  decoration: const InputDecoration(labelText: 'Currency'),
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description (optional)',
+                    prefixIcon: Icon(Icons.notes),
+                  ),
                 ),
-                const SizedBox(height: 20),
+
+                const SizedBox(height: 16),
+
+                DropdownButtonFormField<String>(
+                  value: selectedCurrency,
+                  items: currencies
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .toList(),
+                  onChanged: (value) => setState(() => selectedCurrency = value),
+                  decoration: const InputDecoration(
+                    labelText: 'Currency',
+                    prefixIcon: Icon(Icons.monetization_on),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
                 BlocBuilder<TransactionsBloc, TransactionsState>(
                   builder: (context, state) {
                     final isLoading = state is TransactionsLoading;
-                    return ElevatedButton(
-                      onPressed: isLoading ? null : _updateTransaction,
-                      child: isLoading
+                    return ElevatedButton.icon(
+                      icon: isLoading
                           ? const SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Update Transaction'),
+                          : const Icon(Icons.check_circle_outline),
+                      label: Text(isLoading ? 'Upsating...' : 'Save'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                      ),
+                      onPressed: isLoading ? null : _updateTransaction,
                     );
                   },
                 ),

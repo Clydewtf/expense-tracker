@@ -17,9 +17,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
   final _categoryController = TextEditingController();
+
   String? selectedCurrency;
+  String selectedType = 'expense';
 
   final List<String> currencies = ['USD', 'EUR', 'RUB'];
+  final List<Map<String, dynamic>> types = [
+    {'label': 'Expense', 'value': 'expense', 'icon': Icons.arrow_upward, 'color': Colors.red},
+    {'label': 'Income', 'value': 'income', 'icon': Icons.arrow_downward, 'color': Colors.green},
+  ];
 
   @override
   void initState() {
@@ -49,50 +55,110 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           },
           child: Form(
             key: _formKey,
-            child: Column(
+            child: ListView(
               children: [
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(labelText: 'Description'),
+                Text(
+                  'Transaction type',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: types.map((type) {
+                    final isSelected = selectedType == type['value'];
+                    return ChoiceChip(
+                      label: Row(
+                        children: [
+                          Icon(type['icon'], color: isSelected ? Colors.white : type['color']),
+                          const SizedBox(width: 6),
+                          Text(type['label']),
+                        ],
+                      ),
+                      selectedColor: type['color'],
+                      selected: isSelected,
+                      onSelected: (_) {
+                        setState(() => selectedType = type['value']);
+                      },
+                    );
+                  }).toList(),
+                ),
+
+                const SizedBox(height: 24),
+
                 TextFormField(
                   controller: _amountController,
-                  decoration: const InputDecoration(labelText: 'Amount'),
+                  decoration: const InputDecoration(
+                    labelText: 'Amount',
+                    prefixIcon: Icon(Icons.attach_money),
+                  ),
                   keyboardType: TextInputType.number,
                   validator: (val) =>
                       val == null || val.isEmpty ? 'Enter amount' : null,
                 ),
+
+                const SizedBox(height: 16),
+
                 TextFormField(
                   controller: _categoryController,
-                  decoration: const InputDecoration(labelText: 'Category'),
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    prefixIcon: Icon(Icons.category),
+                  ),
                   validator: (val) =>
                       val == null || val.isEmpty ? 'Enter category' : null,
                 ),
+
                 const SizedBox(height: 16),
+
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description (optional)',
+                    prefixIcon: Icon(Icons.notes),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
                 DropdownButtonFormField<String>(
                   value: selectedCurrency,
                   items: currencies
                       .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                       .toList(),
                   onChanged: (value) => setState(() => selectedCurrency = value),
-                  decoration: const InputDecoration(labelText: 'Currency'),
+                  decoration: const InputDecoration(
+                    labelText: 'Currency',
+                    prefixIcon: Icon(Icons.monetization_on),
+                  ),
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton(
+
+                const SizedBox(height: 24),
+
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text('Add Transaction'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                  ),
                   onPressed: () {
-                    if (_formKey.currentState!.validate() && selectedCurrency != null) {
+                    if (_formKey.currentState!.validate() &&
+                        selectedCurrency != null) {
                       FocusScope.of(context).unfocus();
+
                       final txn = TransactionModel(
                         amount: double.parse(_amountController.text),
                         category: _categoryController.text,
                         description: _descriptionController.text,
                         currency: selectedCurrency!,
                         date: DateTime.now(),
+                        type: selectedType,
                       );
-                      context.read<TransactionsBloc>().add(AddTransactionEvent(txn));
+
+                      context
+                          .read<TransactionsBloc>()
+                          .add(AddTransactionEvent(txn));
                     }
                   },
-                  child: const Text('Add Transaction'),
                 ),
               ],
             ),
