@@ -17,10 +17,10 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _descriptionController;
   late TextEditingController _amountController;
-  late TextEditingController _categoryController;
 
   String? selectedCurrency;
   late String selectedType;
+  String? selectedCategory;
 
   final List<String> currencies = ['USD', 'EUR', 'RUB'];
   final List<Map<String, dynamic>> types = [
@@ -28,23 +28,58 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     {'label': 'Income', 'value': 'income', 'icon': Icons.arrow_downward, 'color': Colors.green},
   ];
 
+  final Map<String, List<String>> categoriesByType = {
+    'expense': ['Food', 'Transport', 'Entertainment', 'Utilities', 'Shopping', 'Health', 'Education'],
+    'income': ['Salary', 'Freelance', 'Gifts', 'Investments', 'Other'],
+  };
+
   @override
   void initState() {
     super.initState();
     _descriptionController = TextEditingController(text: widget.transaction.description);
     _amountController = TextEditingController(text: widget.transaction.amount.toString());
-    _categoryController = TextEditingController(text: widget.transaction.category);
 
     selectedCurrency = widget.transaction.currency;
     selectedType = widget.transaction.type;
+    selectedCategory = widget.transaction.category;
+
+    if (!categoriesByType[selectedType]!.contains(selectedCategory)) {
+      categoriesByType[selectedType]!.add(selectedCategory!);
+    }
   }
 
   @override
   void dispose() {
     _descriptionController.dispose();
     _amountController.dispose();
-    _categoryController.dispose();
     super.dispose();
+  }
+
+  void _addNewCategory() async {
+    final newCategory = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text('Add New Category'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(hintText: 'Category name'),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Add')),
+          ],
+        );
+      },
+    );
+
+    if (newCategory != null && newCategory.isNotEmpty) {
+      setState(() {
+        categoriesByType[selectedType]!.add(newCategory);
+        selectedCategory = newCategory;
+      });
+    }
   }
 
   void _updateTransaction() {
@@ -53,7 +88,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     final updates = {
       'description': _descriptionController.text,
       'amount': double.tryParse(_amountController.text) ?? 0,
-      'category': _categoryController.text,
+      'category': selectedCategory,
       'currency': selectedCurrency,
       'type': selectedType,
     };
@@ -65,6 +100,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final categories = categoriesByType[selectedType]!;
+
     return BlocListener<TransactionsBloc, TransactionsState>(
       listener: (context, state) {
         if (state is TransactionDetailLoaded) {
@@ -86,10 +123,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
             key: _formKey,
             child: ListView(
               children: [
-                Text(
-                  'Transaction type',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('Transaction type', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -106,61 +140,57 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                       selectedColor: type['color'],
                       selected: isSelected,
                       onSelected: (_) {
-                        setState(() => selectedType = type['value']);
+                        setState(() {
+                          selectedType = type['value'];
+                          selectedCategory = categoriesByType[selectedType]!.first;
+                        });
                       },
                     );
                   }).toList(),
                 ),
-
                 const SizedBox(height: 24),
 
                 TextFormField(
                   controller: _amountController,
-                  decoration: const InputDecoration(
-                    labelText: 'Amount',
-                    prefixIcon: Icon(Icons.attach_money),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Amount', prefixIcon: Icon(Icons.attach_money)),
                   keyboardType: TextInputType.number,
-                  validator: (val) =>
-                      val == null || val.isEmpty ? 'Enter amount' : null,
+                  validator: (val) => val == null || val.isEmpty ? 'Enter amount' : null,
                 ),
-
                 const SizedBox(height: 16),
 
-                TextFormField(
-                  controller: _categoryController,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    prefixIcon: Icon(Icons.category),
-                  ),
-                  validator: (val) =>
-                      val == null || val.isEmpty ? 'Enter category' : null,
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: selectedCategory,
+                        items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                        onChanged: (value) => setState(() => selectedCategory = value),
+                        decoration: const InputDecoration(
+                          labelText: 'Category',
+                          prefixIcon: Icon(Icons.category),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: _addNewCategory,
+                    )
+                  ],
                 ),
-
                 const SizedBox(height: 16),
 
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (optional)',
-                    prefixIcon: Icon(Icons.notes),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Description (optional)', prefixIcon: Icon(Icons.notes)),
                 ),
-
                 const SizedBox(height: 16),
 
                 DropdownButtonFormField<String>(
                   value: selectedCurrency,
-                  items: currencies
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
+                  items: currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                   onChanged: (value) => setState(() => selectedCurrency = value),
-                  decoration: const InputDecoration(
-                    labelText: 'Currency',
-                    prefixIcon: Icon(Icons.monetization_on),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Currency', prefixIcon: Icon(Icons.monetization_on)),
                 ),
-
                 const SizedBox(height: 24),
 
                 BlocBuilder<TransactionsBloc, TransactionsState>(
@@ -168,16 +198,10 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                     final isLoading = state is TransactionsLoading;
                     return ElevatedButton.icon(
                       icon: isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                           : const Icon(Icons.check_circle_outline),
-                      label: Text(isLoading ? 'Upsating...' : 'Save'),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
-                      ),
+                      label: Text(isLoading ? 'Updating...' : 'Save'),
+                      style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
                       onPressed: isLoading ? null : _updateTransaction,
                     );
                   },

@@ -16,10 +16,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
-  final _categoryController = TextEditingController();
 
   String? selectedCurrency;
   String selectedType = 'expense';
+  String? selectedCategory;
 
   final List<String> currencies = ['USD', 'EUR', 'RUB'];
   final List<Map<String, dynamic>> types = [
@@ -27,19 +27,53 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     {'label': 'Income', 'value': 'income', 'icon': Icons.arrow_downward, 'color': Colors.green},
   ];
 
+  final Map<String, List<String>> categoriesByType = {
+    'expense': ['Food', 'Transport', 'Entertainment', 'Utilities', 'Shopping', 'Health', 'Education'],
+    'income': ['Salary', 'Freelance', 'Gifts', 'Investments', 'Other'],
+  };
+
   @override
   void initState() {
     super.initState();
     final userState = context.read<UserBloc>().state;
-    if (userState is UserLoaded) {
-      selectedCurrency = userState.user.defaultCurrency;
-    } else {
-      selectedCurrency = 'USD';
+    selectedCurrency = (userState is UserLoaded) ? userState.user.defaultCurrency : 'USD';
+    selectedCategory = categoriesByType[selectedType]!.first;
+  }
+
+  void _addNewCategory() async {
+    final newCategory = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text('Add New Category'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(hintText: 'Category name'),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newCategory != null && newCategory.isNotEmpty) {
+      setState(() {
+        categoriesByType[selectedType]!.add(newCategory);
+        selectedCategory = newCategory;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final categories = categoriesByType[selectedType]!;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Add Transaction')),
       body: Padding(
@@ -47,8 +81,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         child: BlocListener<TransactionsBloc, TransactionsState>(
           listener: (context, state) {
             if (state is TransactionsError) {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text(state.message)));
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
             } else if (state is TransactionsLoaded) {
               Navigator.pop(context);
             }
@@ -57,10 +90,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             key: _formKey,
             child: ListView(
               children: [
-                Text(
-                  'Transaction type',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('Transaction type', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -77,86 +107,77 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       selectedColor: type['color'],
                       selected: isSelected,
                       onSelected: (_) {
-                        setState(() => selectedType = type['value']);
+                        setState(() {
+                          selectedType = type['value'];
+                          selectedCategory = categoriesByType[selectedType]!.first;
+                        });
                       },
                     );
                   }).toList(),
                 ),
-
                 const SizedBox(height: 24),
 
                 TextFormField(
                   controller: _amountController,
-                  decoration: const InputDecoration(
-                    labelText: 'Amount',
-                    prefixIcon: Icon(Icons.attach_money),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Amount', prefixIcon: Icon(Icons.attach_money)),
                   keyboardType: TextInputType.number,
-                  validator: (val) =>
-                      val == null || val.isEmpty ? 'Enter amount' : null,
+                  validator: (val) => val == null || val.isEmpty ? 'Enter amount' : null,
                 ),
-
                 const SizedBox(height: 16),
 
-                TextFormField(
-                  controller: _categoryController,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    prefixIcon: Icon(Icons.category),
-                  ),
-                  validator: (val) =>
-                      val == null || val.isEmpty ? 'Enter category' : null,
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: selectedCategory,
+                        items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                        onChanged: (value) => setState(() => selectedCategory = value),
+                        decoration: const InputDecoration(
+                          labelText: 'Category',
+                          prefixIcon: Icon(Icons.category),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: _addNewCategory,
+                    )
+                  ],
                 ),
-
                 const SizedBox(height: 16),
 
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (optional)',
-                    prefixIcon: Icon(Icons.notes),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Description (optional)', prefixIcon: Icon(Icons.notes)),
                 ),
-
                 const SizedBox(height: 16),
 
                 DropdownButtonFormField<String>(
                   value: selectedCurrency,
-                  items: currencies
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
+                  items: currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                   onChanged: (value) => setState(() => selectedCurrency = value),
-                  decoration: const InputDecoration(
-                    labelText: 'Currency',
-                    prefixIcon: Icon(Icons.monetization_on),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Currency', prefixIcon: Icon(Icons.monetization_on)),
                 ),
-
                 const SizedBox(height: 24),
 
                 ElevatedButton.icon(
                   icon: const Icon(Icons.check_circle_outline),
                   label: const Text('Add Transaction'),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
-                  ),
+                  style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
                   onPressed: () {
-                    if (_formKey.currentState!.validate() &&
-                        selectedCurrency != null) {
+                    if (_formKey.currentState!.validate() && selectedCurrency != null) {
                       FocusScope.of(context).unfocus();
 
                       final txn = TransactionModel(
                         amount: double.parse(_amountController.text),
-                        category: _categoryController.text,
+                        category: selectedCategory!,
                         description: _descriptionController.text,
                         currency: selectedCurrency!,
                         date: DateTime.now(),
                         type: selectedType,
                       );
 
-                      context
-                          .read<TransactionsBloc>()
-                          .add(AddTransactionEvent(txn));
+                      context.read<TransactionsBloc>().add(AddTransactionEvent(txn));
                     }
                   },
                 ),
