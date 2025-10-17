@@ -25,6 +25,7 @@ class OfflineTransactionRepository {
       category: txn.category,
       description: txn.description,
       date: txn.date,
+      type: txn.type,
       isSynced: false,
       operationType: 'add',
     );
@@ -39,6 +40,7 @@ class OfflineTransactionRepository {
       existing.currency = txn.currency;
       existing.category = txn.category;
       existing.description = txn.description;
+      existing.type = txn.type;
       existing.isSynced = false;
       existing.operationType = 'update';
       await localSource.update(key, existing);
@@ -57,7 +59,6 @@ class OfflineTransactionRepository {
     if (existing != null) {
       existing.isSynced = false;
       existing.operationType = 'delete';
-      //existing.id = serverId ?? existing.id;
       await localSource.update(key, existing);
     } else {
       throw Exception('Local transaction not found');
@@ -120,6 +121,7 @@ class OfflineTransactionRepository {
           existing.category = txn.category;
           existing.description = txn.description;
           existing.date = txn.date;
+          existing.type = txn.type;
           existing.isSynced = true;
           existing.operationType = null;
           await localSource.update(existing.key, existing);
@@ -153,6 +155,7 @@ class OfflineTransactionRepository {
           existing.category = remoteTxn.category;
           existing.description = remoteTxn.description;
           existing.date = remoteTxn.date;
+          existing.type = remoteTxn.type;
           existing.isSynced = true;
           existing.operationType = null;
           await localSource.update(existing.key, existing);
@@ -177,6 +180,7 @@ extension HiveTransactionExtension on HiveTransaction {
       category: category,
       description: description,
       date: date,
+      type: type,
       isSynced: isSynced,
       localKey: key is int ? key as int : null,
     );
