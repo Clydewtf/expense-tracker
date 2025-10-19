@@ -121,6 +121,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
         category: event.updates['category'] ?? localTxn.category,
         description: event.updates['description'] ?? localTxn.description,
         date: localTxn.date,
+        type: event.updates['type'] ?? localTxn.type,
         isSynced: false,
       );
       await transactionRepository.updateTransactionOffline(localTxn.key as int, updatedTxn);

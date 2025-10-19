@@ -30,6 +30,9 @@ class HiveTransaction extends HiveObject {
   @HiveField(7)
   String? operationType;
 
+  @HiveField(8)
+  String type;
+
   HiveTransaction({
     this.id,
     required this.amount,
@@ -39,6 +42,7 @@ class HiveTransaction extends HiveObject {
     required this.date,
     this.isSynced = false,
     this.operationType,
+    this.type = 'expense',
   });
 
   factory HiveTransaction.fromModel(TransactionModel m, {bool isSynced = false, String? operationType}) {
@@ -51,6 +55,7 @@ class HiveTransaction extends HiveObject {
       date: m.date,
       isSynced: isSynced,
       operationType: operationType,
+      type: m.type,
     );
   }
 
@@ -65,6 +70,7 @@ class HiveTransaction extends HiveObject {
       category: category,
       description: description,
       date: date,
+      type: type,
       isSynced: isSynced,
       localKey: serverId ?? localKey,
     );
