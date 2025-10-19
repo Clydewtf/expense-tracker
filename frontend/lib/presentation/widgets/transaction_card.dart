@@ -25,14 +25,24 @@ class TransactionCard extends StatelessWidget {
               : context.read<RatesCubit>().convert(txn.currency, defaultCurrency, txn.amount);
         }
 
+        final isExpense = txn.type == 'expense';
+        final icon = isExpense ? Icons.arrow_upward : Icons.arrow_downward;
+        final iconColor = isExpense ? Colors.red : Colors.green;
+
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: ListTile(
-            title: Column(
+            leading: CircleAvatar(
+              backgroundColor: iconColor.withValues(alpha: 0.2),
+              child: Icon(icon, color: iconColor),
+            ),
+            title: Text(
+              '${txn.amount.toStringAsFixed(2)} ${txn.currency}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${txn.amount} ${txn.currency}',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 if (txn.currency != defaultCurrency)
                   Text(
                     convertedAmount != null
@@ -40,9 +50,10 @@ class TransactionCard extends StatelessWidget {
                         : 'Converting...',
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
+                if (txn.description != null && txn.description!.isNotEmpty)
+                  Text(txn.description!, style: const TextStyle(fontSize: 12)),
               ],
             ),
-            subtitle: Text(txn.description ?? ''),
             trailing: Text(
               '${txn.date.toLocal()}'.split(' ')[0],
               style: const TextStyle(fontSize: 12),

@@ -6,6 +6,7 @@ class TransactionModel {
   final String category;
   final String? description;
   final DateTime date;
+  final String type;
   final bool isSynced;
   int? localKey;
 
@@ -17,6 +18,7 @@ class TransactionModel {
     required this.category,
     this.description,
     required this.date,
+    required this.type,
     this.isSynced = true,
     this.localKey,
   });
@@ -29,6 +31,7 @@ class TransactionModel {
       category: json['category'],
       description: json['description'] as String?,
       date: DateTime.parse(json['date']),
+      type: json['type'],
     );
 
   Map<String, dynamic> toJson() => {
@@ -39,5 +42,6 @@ class TransactionModel {
       'category': category,
       'description': description,
       'date': date.toIso8601String(),
+      'type': type,
     };
 }

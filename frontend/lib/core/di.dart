@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:frontend/data/repositories/category_repository.dart';
 import 'package:provider/provider.dart';
 
 import '../data/repositories/rates_repository.dart';
@@ -21,6 +22,7 @@ class AppProviders {
   static Future<Widget> setup({
     required Widget child,
     required LocalTransactionSource localSource,
+    required CategoryRepository categoryRepository,
   }) async {
     return MultiProvider(
       providers: [
@@ -38,6 +40,7 @@ class AppProviders {
 
         // Local source (already initialized)
         Provider<LocalTransactionSource>.value(value: localSource),
+        Provider<CategoryRepository>.value(value: categoryRepository),
 
         // Remote source
         ProxyProvider<ApiClient, RemoteTransactionSource>(
