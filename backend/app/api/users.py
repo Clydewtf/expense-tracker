@@ -3,10 +3,15 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.user_schema import UserCreate, UserRead
-from app.core.security import hash_password, verify_password, create_access_token
+from app.schemas.user_schema import UserCreate, UserRead, UserUpdate
+from app.core.security import hash_password, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+@router.get("/me", response_model=UserRead)
+def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    return current_user
 
 
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
@@ -48,3 +53,14 @@ def get_user_by_email(email: str, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
+
+
+@router.patch("/settings", response_model=UserRead)
+def update_user_settings(
+    user_update: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    repo = UserRepository(db)
+    updated_user = repo.update(current_user, user_update.dict(exclude_unset=True))
+    return updated_user

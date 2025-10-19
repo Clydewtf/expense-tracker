@@ -1,5 +1,11 @@
 from pydantic import BaseModel
 from datetime import datetime
+from enum import Enum
+
+
+class TransactionType(str, Enum):
+    income = "income"
+    expense = "expense"
 
 
 class TransactionCreate(BaseModel):
@@ -8,6 +14,7 @@ class TransactionCreate(BaseModel):
     category: str
     description: str | None = None
     date: datetime | None = None
+    type: TransactionType = TransactionType.expense
 
 
 class TransactionRead(BaseModel):
@@ -18,6 +25,7 @@ class TransactionRead(BaseModel):
     category: str
     description: str | None
     date: datetime
+    type: TransactionType
 
     class ConfigDict:
         from_attributes = True
@@ -29,3 +37,4 @@ class TransactionUpdate(BaseModel):
     category: str | None = None
     description: str | None = None
     date: datetime | None = None
+    type: TransactionType | None = None

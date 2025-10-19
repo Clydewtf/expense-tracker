@@ -4,6 +4,7 @@ import '../presentation/screens/auth/login_screen.dart';
 import '../presentation/screens/auth/register_screen.dart';
 import '../presentation/screens/auth/splash_screen.dart';
 import '../presentation/screens/home/home_screen.dart';
+import '../presentation/screens/home/profile_screen.dart';
 import '../presentation/screens/transaction/add_transaction_screen.dart';
 import '../presentation/screens/transaction/edit_transaction_screen.dart';
 import '../presentation/screens/transaction/transaction_detail_screen.dart';
@@ -21,6 +22,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const RegisterScreen());
       case '/home':
         return MaterialPageRoute(builder: (_) => const HomeScreen());
+      case '/profile':
+        return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case '/transactions':
         return MaterialPageRoute(builder: (_) => const TransactionsScreen());
       case '/transaction_detail':

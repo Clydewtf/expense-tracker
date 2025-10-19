@@ -6,6 +6,7 @@ class TransactionModel {
   final String category;
   final String? description;
   final DateTime date;
+  final String type;
   final bool isSynced;
   int? localKey;
 
@@ -17,27 +18,30 @@ class TransactionModel {
     required this.category,
     this.description,
     required this.date,
+    required this.type,
     this.isSynced = true,
     this.localKey,
   });
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) => TransactionModel(
-        id: json['id'] as int?,
-        userId: json['user_id'] as int?,
-        amount: (json['amount'] as num).toDouble(),
-        currency: json['currency'],
-        category: json['category'],
-        description: json['description'] as String?,
-        date: DateTime.parse(json['date']),
-      );
+      id: json['id'] as int?,
+      userId: json['user_id'] as int?,
+      amount: (json['amount'] as num).toDouble(),
+      currency: json['currency'],
+      category: json['category'],
+      description: json['description'] as String?,
+      date: DateTime.parse(json['date']),
+      type: json['type'],
+    );
 
   Map<String, dynamic> toJson() => {
-        if (id != null) 'id': id,
-        if (userId != null) 'user_id': userId,
-        'amount': amount,
-        'currency': currency,
-        'category': category,
-        'description': description,
-        'date': date.toIso8601String(),
-      };
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      'amount': amount,
+      'currency': currency,
+      'category': category,
+      'description': description,
+      'date': date.toIso8601String(),
+      'type': type,
+    };
 }

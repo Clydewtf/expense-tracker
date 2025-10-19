@@ -1,8 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:frontend/data/repositories/category_repository.dart';
 import 'package:provider/provider.dart';
 
+import '../data/repositories/rates_repository.dart';
+import '../data/repositories/user_repository.dart';
+import '../logic/blocs/user/user_bloc.dart';
+import '../logic/cubits/rates_cubit.dart';
 import '../services/network_service.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/transaction_repository.dart';
@@ -17,6 +22,7 @@ class AppProviders {
   static Future<Widget> setup({
     required Widget child,
     required LocalTransactionSource localSource,
+    required CategoryRepository categoryRepository,
   }) async {
     return MultiProvider(
       providers: [
@@ -34,6 +40,7 @@ class AppProviders {
 
         // Local source (already initialized)
         Provider<LocalTransactionSource>.value(value: localSource),
+        Provider<CategoryRepository>.value(value: categoryRepository),
 
         // Remote source
         ProxyProvider<ApiClient, RemoteTransactionSource>(
@@ -63,6 +70,16 @@ class AppProviders {
               AuthRepository(apiClient: apiClient, secureStorage: storage),
         ),
 
+        // User repository
+        ProxyProvider<ApiClient, UserRepository>(
+          update: (_, apiClient, __) => UserRepository(apiClient: apiClient),
+        ),
+
+        // Rates repository
+        ProxyProvider<ApiClient, RatesRepository>(
+          update: (_, apiClient, __) => RatesRepository(apiClient: apiClient),
+        ),
+
         // Blocs
         ProxyProvider<AuthRepository, AuthBloc>(
           update: (_, authRepo, __) => AuthBloc(authRepository: authRepo),
@@ -73,6 +90,17 @@ class AppProviders {
           update: (_, txnRepo, authRepo, previous) => previous ?? 
               TransactionsBloc(transactionRepository: txnRepo, authRepository: authRepo),
           dispose: (_, bloc) => bloc.close(),
+        ),
+
+        ProxyProvider<UserRepository, UserBloc>(
+          update: (_, userRepo, __) => UserBloc(userRepository: userRepo)..add(LoadUser()),
+          dispose: (_, bloc) => bloc.close(),
+        ),
+
+        // Cubits
+        ProxyProvider<RatesRepository, RatesCubit>(
+          update: (_, repo, __) => RatesCubit(repository: repo),
+          dispose: (_, cubit) => cubit.close(),
         ),
       ],
       child: child,

@@ -27,3 +27,23 @@ async def get_rate(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
+
+
+@router.get("/all")
+async def get_all_rates(
+    base: str = Query(..., min_length=3, max_length=3, description="Base currency (e.g., USD)")
+):
+    """
+    Get all exchange rates for a given base currency.
+    Uses Redis cache, if the exchange rate was requested previously.
+    """
+    try:
+        rates = await exchange_service.get_all_rates(base.upper())
+        return {
+            "base": base.upper(),
+            "rates": rates
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
