@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/models/transaction_model.dart';
+import '../../../data/repositories/category_repository.dart';
 import '../../../logic/blocs/transaction/transaction_bloc.dart';
 
 
@@ -28,10 +29,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     {'label': 'Income', 'value': 'income', 'icon': Icons.arrow_downward, 'color': Colors.green},
   ];
 
-  final Map<String, List<String>> categoriesByType = {
-    'expense': ['Food', 'Transport', 'Entertainment', 'Utilities', 'Shopping', 'Health', 'Education'],
-    'income': ['Salary', 'Freelance', 'Gifts', 'Investments', 'Other'],
-  };
+  List<String> categories = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -43,19 +42,21 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     selectedType = widget.transaction.type;
     selectedCategory = widget.transaction.category;
 
-    if (!categoriesByType[selectedType]!.contains(selectedCategory)) {
-      categoriesByType[selectedType]!.add(selectedCategory!);
-    }
+    _loadCategories();
   }
 
-  @override
-  void dispose() {
-    _descriptionController.dispose();
-    _amountController.dispose();
-    super.dispose();
+  Future<void> _loadCategories() async {
+    final repo = context.read<CategoryRepository>();
+    final cats = repo.getAllByType(selectedType);
+
+    setState(() {
+      categories = cats;
+      selectedCategory = cats.isNotEmpty ? cats.first : null;
+      _isLoading = false;
+    });
   }
 
-  void _addNewCategory() async {
+  Future<void> _addNewCategory() async {
     final newCategory = await showDialog<String>(
       context: context,
       builder: (context) {
@@ -68,22 +69,30 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-            TextButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Add')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              child: const Text('Add'),
+            ),
           ],
         );
       },
     );
 
-    if (newCategory != null && newCategory.isNotEmpty) {
-      setState(() {
-        categoriesByType[selectedType]!.add(newCategory);
-        selectedCategory = newCategory;
-      });
+    if (newCategory != null && newCategory.isNotEmpty && mounted) {
+      final repo = context.read<CategoryRepository>();
+      await repo.addCategory(selectedType, newCategory);
+      await _loadCategories();
+      setState(() => selectedCategory = newCategory);
     }
   }
 
+  void _onTypeChanged(String type) async {
+    setState(() => selectedType = type);
+    await _loadCategories();
+  }
+
   void _updateTransaction() {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate() || selectedCategory == null || selectedCurrency == null) return;
 
     final updates = {
       'description': _descriptionController.text,
@@ -99,9 +108,17 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final categories = categoriesByType[selectedType]!;
+  void dispose() {
+    _descriptionController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     return BlocListener<TransactionsBloc, TransactionsState>(
       listener: (context, state) {
         if (state is TransactionDetailLoaded) {
@@ -139,12 +156,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                       ),
                       selectedColor: type['color'],
                       selected: isSelected,
-                      onSelected: (_) {
-                        setState(() {
-                          selectedType = type['value'];
-                          selectedCategory = categoriesByType[selectedType]!.first;
-                        });
-                      },
+                      onSelected: (_) => _onTypeChanged(type['value']),
                     );
                   }).toList(),
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/models/transaction_model.dart';
+import '../../../data/repositories/category_repository.dart';
 import '../../../logic/blocs/transaction/transaction_bloc.dart';
 import '../../../logic/blocs/user/user_bloc.dart';
 
@@ -27,20 +28,26 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     {'label': 'Income', 'value': 'income', 'icon': Icons.arrow_downward, 'color': Colors.green},
   ];
 
-  final Map<String, List<String>> categoriesByType = {
-    'expense': ['Food', 'Transport', 'Entertainment', 'Utilities', 'Shopping', 'Health', 'Education'],
-    'income': ['Salary', 'Freelance', 'Gifts', 'Investments', 'Other'],
-  };
+  List<String> categories = [];
 
   @override
   void initState() {
     super.initState();
     final userState = context.read<UserBloc>().state;
     selectedCurrency = (userState is UserLoaded) ? userState.user.defaultCurrency : 'USD';
-    selectedCategory = categoriesByType[selectedType]!.first;
+    _loadCategories();
   }
 
-  void _addNewCategory() async {
+  Future<void> _loadCategories() async {
+    final repo = context.read<CategoryRepository>();
+    final cats = repo.getAllByType(selectedType);
+    setState(() {
+      categories = cats;
+      selectedCategory = cats.isNotEmpty ? cats.first : null;
+    });
+  }
+
+  Future<void> _addNewCategory() async {
     final newCategory = await showDialog<String>(
       context: context,
       builder: (context) {
@@ -62,18 +69,36 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       },
     );
 
-    if (newCategory != null && newCategory.isNotEmpty) {
-      setState(() {
-        categoriesByType[selectedType]!.add(newCategory);
-        selectedCategory = newCategory;
-      });
+    if (newCategory != null && newCategory.isNotEmpty && mounted) {
+      final repo = context.read<CategoryRepository>();
+      await repo.addCategory(selectedType, newCategory);
+      await _loadCategories();
+      setState(() => selectedCategory = newCategory);
     }
+  }
+
+  void _onTypeChanged(String type) async {
+    setState(() => selectedType = type);
+    await _loadCategories();
+  }
+
+  void _onSubmit() {
+    if (!_formKey.currentState!.validate() || selectedCurrency == null || selectedCategory == null) return;
+
+    final txn = TransactionModel(
+      amount: double.parse(_amountController.text),
+      category: selectedCategory!,
+      description: _descriptionController.text,
+      currency: selectedCurrency!,
+      date: DateTime.now(),
+      type: selectedType,
+    );
+
+    context.read<TransactionsBloc>().add(AddTransactionEvent(txn));
   }
 
   @override
   Widget build(BuildContext context) {
-    final categories = categoriesByType[selectedType]!;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Add Transaction')),
       body: Padding(
@@ -106,12 +131,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       ),
                       selectedColor: type['color'],
                       selected: isSelected,
-                      onSelected: (_) {
-                        setState(() {
-                          selectedType = type['value'];
-                          selectedCategory = categoriesByType[selectedType]!.first;
-                        });
-                      },
+                      onSelected: (_) => _onTypeChanged(type['value']),
                     );
                   }).toList(),
                 ),
@@ -164,22 +184,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   icon: const Icon(Icons.check_circle_outline),
                   label: const Text('Add Transaction'),
                   style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-                  onPressed: () {
-                    if (_formKey.currentState!.validate() && selectedCurrency != null) {
-                      FocusScope.of(context).unfocus();
-
-                      final txn = TransactionModel(
-                        amount: double.parse(_amountController.text),
-                        category: selectedCategory!,
-                        description: _descriptionController.text,
-                        currency: selectedCurrency!,
-                        date: DateTime.now(),
-                        type: selectedType,
-                      );
-
-                      context.read<TransactionsBloc>().add(AddTransactionEvent(txn));
-                    }
-                  },
+                  onPressed: _onSubmit,
                 ),
               ],
             ),
